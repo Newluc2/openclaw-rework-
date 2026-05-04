@@ -108,10 +108,14 @@ const NodesToolSchema = Type.Object({
   outPath: Type.Optional(Type.String()),
   // screen_click
   x: Type.Optional(
-    Type.Number({ description: "screen_click: x coordinate in pixels from left edge" }),
+    Type.Number({
+      description: "screen_click (required): x coordinate in pixels from left edge of screen",
+    }),
   ),
   y: Type.Optional(
-    Type.Number({ description: "screen_click: y coordinate in pixels from top edge" }),
+    Type.Number({
+      description: "screen_click (required): y coordinate in pixels from top edge of screen",
+    }),
   ),
   button: Type.Optional(
     Type.String({ description: "screen_click: mouse button (left|right|center), default left" }),
