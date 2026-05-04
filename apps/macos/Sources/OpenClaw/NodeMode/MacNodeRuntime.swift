@@ -67,6 +67,8 @@ actor MacNodeRuntime {
                 return try await self.handleScreenSnapshotInvoke(req)
             case MacNodeScreenCommand.record.rawValue:
                 return try await self.handleScreenRecordInvoke(req)
+            case MacNodeScreenCommand.click.rawValue:
+                return try await self.handleScreenClickInvoke(req)
             case OpenClawSystemCommand.run.rawValue:
                 return try await self.handleSystemRun(req)
             case OpenClawSystemCommand.which.rawValue:
@@ -379,6 +381,53 @@ actor MacNodeRuntime {
             height: res.height,
             screenIndex: params.screenIndex,
             capturedAtMs: capturedAtMs))
+        return BridgeInvokeResponse(id: req.id, ok: true, payloadJSON: payload)
+    }
+
+    private func handleScreenClickInvoke(_ req: BridgeInvokeRequest) async throws -> BridgeInvokeResponse {
+        let params = try Self.decodeParams(MacNodeScreenClickParams.self, from: req.paramsJSON)
+        let x = params.x
+        let y = params.y
+        let clickCount = params.clickCount ?? 1
+        let buttonRaw = params.button?.lowercased() ?? "left"
+
+        let cgButton: CGMouseButton
+        let downType: CGEventType
+        let upType: CGEventType
+        switch buttonRaw {
+        case "right":
+            cgButton = .right
+            downType = .rightMouseDown
+            upType = .rightMouseUp
+        case "center", "middle":
+            cgButton = .center
+            downType = .otherMouseDown
+            upType = .otherMouseUp
+        default:
+            cgButton = .left
+            downType = .leftMouseDown
+            upType = .leftMouseUp
+        }
+
+        let point = CGPoint(x: x, y: y)
+        for _ in 0 ..< max(1, clickCount) {
+            guard
+                let down = CGEvent(mouseEventSource: nil, mouseType: downType, mouseCursorPosition: point, mouseButton: cgButton),
+                let up = CGEvent(mouseEventSource: nil, mouseType: upType, mouseCursorPosition: point, mouseButton: cgButton)
+            else {
+                return Self.errorResponse(req, code: .unavailable, message: "CLICK_FAILED: could not create CGEvent")
+            }
+            down.post(tap: .cghidEventTap)
+            up.post(tap: .cghidEventTap)
+        }
+        struct ClickPayload: Encodable {
+            var ok: Bool
+            var x: Double
+            var y: Double
+            var button: String
+            var clickCount: Int
+        }
+        let payload = try Self.encodePayload(ClickPayload(ok: true, x: x, y: y, button: buttonRaw, clickCount: clickCount))
         return BridgeInvokeResponse(id: req.id, ok: true, payloadJSON: payload)
     }
 

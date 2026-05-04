@@ -38,7 +38,7 @@ const PHONE_ADMIN_SCOPE = "operator.admin";
 
 const GROUP_COMMANDS: Record<Exclude<ArmGroup, "all">, string[]> = {
   camera: ["camera.snap", "camera.clip"],
-  screen: ["screen.record"],
+  screen: ["screen.click", "screen.record"],
   writes: ["calendar.add", "contacts.add", "reminders.add", "sms.send"],
 };
 

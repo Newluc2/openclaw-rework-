@@ -27,7 +27,9 @@ const NODES_TOOL_ACTIONS = [
   "camera_list",
   "camera_clip",
   "photos_latest",
+  "screen_snapshot",
   "screen_record",
+  "screen_click",
   "location_get",
   "notifications_list",
   "notifications_action",
@@ -104,6 +106,19 @@ const NodesToolSchema = Type.Object({
   fps: Type.Optional(Type.Number()),
   screenIndex: Type.Optional(Type.Number()),
   outPath: Type.Optional(Type.String()),
+  // screen_click
+  x: Type.Optional(
+    Type.Number({ description: "screen_click: x coordinate in pixels from left edge" }),
+  ),
+  y: Type.Optional(
+    Type.Number({ description: "screen_click: y coordinate in pixels from top edge" }),
+  ),
+  button: Type.Optional(
+    Type.String({ description: "screen_click: mouse button (left|right|center), default left" }),
+  ),
+  clickCount: Type.Optional(
+    Type.Number({ description: "screen_click: number of clicks (1=single, 2=double), default 1" }),
+  ),
   // location_get
   maxAgeMs: Type.Optional(Type.Number()),
   locationTimeoutMs: Type.Optional(Type.Number()),
@@ -261,6 +276,24 @@ export function createNodesTool(options?: {
               gatewayOpts,
               modelHasVision: options?.modelHasVision,
               imageSanitization,
+            });
+          }
+          case "screen_snapshot": {
+            return await executeNodeMediaAction({
+              action,
+              params,
+              gatewayOpts,
+              modelHasVision: options?.modelHasVision,
+              imageSanitization,
+            });
+          }
+          case "screen_click": {
+            return await executeNodeCommandAction({
+              action,
+              input: params,
+              gatewayOpts,
+              allowMediaInvokeCommands: options?.allowMediaInvokeCommands,
+              mediaInvokeActions: MEDIA_INVOKE_ACTIONS,
             });
           }
           case "location_get": {

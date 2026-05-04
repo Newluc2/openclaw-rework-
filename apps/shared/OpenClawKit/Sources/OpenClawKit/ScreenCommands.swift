@@ -3,6 +3,7 @@ import Foundation
 public enum OpenClawScreenCommand: String, Codable, Sendable {
     case snapshot = "screen.snapshot"
     case record = "screen.record"
+    case click = "screen.click"
 }
 
 public enum OpenClawScreenSnapshotFormat: String, Codable, Sendable {
@@ -48,5 +49,24 @@ public struct OpenClawScreenRecordParams: Codable, Sendable, Equatable {
         self.fps = fps
         self.format = format
         self.includeAudio = includeAudio
+    }
+}
+
+public struct OpenClawScreenClickParams: Codable, Sendable, Equatable {
+    public var x: Double
+    public var y: Double
+    public var button: String?
+    public var clickCount: Int?
+
+    public init(
+        x: Double,
+        y: Double,
+        button: String? = nil,
+        clickCount: Int? = nil)
+    {
+        self.x = x
+        self.y = y
+        self.button = button
+        self.clickCount = clickCount
     }
 }

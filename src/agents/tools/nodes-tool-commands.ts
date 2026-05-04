@@ -22,6 +22,7 @@ export type NodeCommandAction =
   | keyof typeof NODE_READ_ACTION_COMMANDS
   | "notifications_action"
   | "location_get"
+  | "screen_click"
   | "invoke";
 
 export async function executeNodeCommandAction(params: {
@@ -111,6 +112,29 @@ export async function executeNodeCommandAction(params: {
         },
       });
       return jsonResult(payload);
+    }
+    case "screen_click": {
+      const node = readStringParam(params.input, "node", { required: true });
+      const x = params.input.x;
+      const y = params.input.y;
+      if (typeof x !== "number" || !Number.isFinite(x)) {
+        throw new Error("x coordinate required for screen_click");
+      }
+      if (typeof y !== "number" || !Number.isFinite(y)) {
+        throw new Error("y coordinate required for screen_click");
+      }
+      const button = typeof params.input.button === "string" ? params.input.button.trim() : "left";
+      const clickCount =
+        typeof params.input.clickCount === "number" && Number.isFinite(params.input.clickCount)
+          ? Math.max(1, Math.floor(params.input.clickCount))
+          : 1;
+      await invokeNodeCommandPayload({
+        gatewayOpts: params.gatewayOpts,
+        node,
+        command: "screen.click",
+        commandParams: { x, y, button, clickCount },
+      });
+      return jsonResult({ ok: true });
     }
     case "invoke": {
       const node = readStringParam(params.input, "node", { required: true });
