@@ -22,7 +22,7 @@ const CAMERA_COMMANDS = ["camera.list"];
 const CAMERA_DANGEROUS_COMMANDS = ["camera.snap", "camera.clip"];
 
 const SCREEN_COMMANDS = ["screen.snapshot"];
-const SCREEN_DANGEROUS_COMMANDS = ["screen.record"];
+const SCREEN_DANGEROUS_COMMANDS = ["screen.record", "screen.click"];
 
 const LOCATION_COMMANDS = ["location.get"];
 const NOTIFICATION_COMMANDS = ["notifications.list"];

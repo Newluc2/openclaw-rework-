@@ -2,6 +2,37 @@ import * as path from "node:path";
 import { writeBase64ToFile } from "./nodes-camera.js";
 import { asRecord, asString, resolveTempPathParts } from "./nodes-media-utils.js";
 
+export type ScreenSnapshotPayload = {
+  format: string;
+  base64: string;
+  width: number;
+  height: number;
+  screenIndex?: number;
+  capturedAtMs?: number;
+};
+
+export function parseScreenSnapshotPayload(value: unknown): ScreenSnapshotPayload {
+  const obj = asRecord(value);
+  const format = asString(obj.format);
+  const base64 = asString(obj.base64);
+  if (!format || !base64) {
+    throw new Error("invalid screen.snapshot payload");
+  }
+  return {
+    format,
+    base64,
+    width: typeof obj.width === "number" ? obj.width : 0,
+    height: typeof obj.height === "number" ? obj.height : 0,
+    screenIndex: typeof obj.screenIndex === "number" ? obj.screenIndex : undefined,
+    capturedAtMs: typeof obj.capturedAtMs === "number" ? obj.capturedAtMs : undefined,
+  };
+}
+
+export function screenSnapshotTempPath(opts: { ext: string; tmpDir?: string; id?: string }) {
+  const { tmpDir, id, ext } = resolveTempPathParts(opts);
+  return path.join(tmpDir, `openclaw-screen-snapshot-${id}${ext}`);
+}
+
 export type ScreenRecordPayload = {
   format: string;
   base64: string;

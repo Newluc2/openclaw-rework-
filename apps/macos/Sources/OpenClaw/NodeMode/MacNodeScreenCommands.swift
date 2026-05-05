@@ -4,6 +4,7 @@ import OpenClawKit
 enum MacNodeScreenCommand: String, Codable {
     case snapshot = "screen.snapshot"
     case record = "screen.record"
+    case click = "screen.click"
 }
 
 struct MacNodeScreenSnapshotParams: Codable, Equatable {
@@ -19,4 +20,11 @@ struct MacNodeScreenRecordParams: Codable, Equatable {
     var fps: Double?
     var format: String?
     var includeAudio: Bool?
+}
+
+struct MacNodeScreenClickParams: Codable, Equatable {
+    var x: Double
+    var y: Double
+    var button: String?
+    var clickCount: Int?
 }

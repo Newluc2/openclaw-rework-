@@ -7,10 +7,13 @@ import {
   parseCameraSnapPayload,
   writeCameraClipPayloadToFile,
   writeCameraPayloadToFile,
+  writeBase64ToFile,
 } from "../../cli/nodes-camera.js";
 import {
   parseScreenRecordPayload,
+  parseScreenSnapshotPayload,
   screenRecordTempPath,
+  screenSnapshotTempPath,
   writeScreenRecordToFile,
 } from "../../cli/nodes-screen.js";
 import { parseDurationMs } from "../../cli/parse-duration.js";
@@ -27,9 +30,15 @@ export const MEDIA_INVOKE_ACTIONS = {
   "camera.clip": "camera_clip",
   "photos.latest": "photos_latest",
   "screen.record": "screen_record",
+  "screen.snapshot": "screen_snapshot",
 } as const;
 
-export type NodeMediaAction = "camera_snap" | "photos_latest" | "camera_clip" | "screen_record";
+export type NodeMediaAction =
+  | "camera_snap"
+  | "photos_latest"
+  | "camera_clip"
+  | "screen_record"
+  | "screen_snapshot";
 
 type ExecuteNodeMediaActionParams = {
   action: NodeMediaAction;
@@ -51,6 +60,8 @@ export async function executeNodeMediaAction(
       return await executeCameraClip(input);
     case "screen_record":
       return await executeScreenRecord(input);
+    case "screen_snapshot":
+      return await executeScreenSnapshot(input);
   }
   throw new Error("Unsupported node media action");
 }
@@ -374,6 +385,68 @@ function requireString(params: Record<string, unknown>, key: string): string {
     throw new Error(`${key} required`);
   }
   return raw.trim();
+}
+
+async function executeScreenSnapshot({
+  params,
+  gatewayOpts,
+  modelHasVision,
+  imageSanitization,
+}: ExecuteNodeMediaActionParams): Promise<AgentToolResult<unknown>> {
+  const node = requireString(params, "node");
+  const resolvedNode = await resolveNode(gatewayOpts, node);
+  const nodeId = resolvedNode.nodeId;
+  const screenIndex =
+    typeof params.screenIndex === "number" && Number.isFinite(params.screenIndex)
+      ? params.screenIndex
+      : undefined;
+  const maxWidth =
+    typeof params.maxWidth === "number" && Number.isFinite(params.maxWidth)
+      ? params.maxWidth
+      : undefined;
+  const quality =
+    typeof params.quality === "number" && Number.isFinite(params.quality)
+      ? params.quality
+      : undefined;
+  const raw = await callGatewayTool<{ payload: unknown }>("node.invoke", gatewayOpts, {
+    nodeId,
+    command: "screen.snapshot",
+    params: {
+      screenIndex,
+      maxWidth,
+      quality,
+      format: "jpeg",
+    },
+    idempotencyKey: crypto.randomUUID(),
+  });
+  const payload = parseScreenSnapshotPayload(raw?.payload);
+  const normalizedFormat = normalizeLowercaseStringOrEmpty(payload.format);
+  const isJpeg = normalizedFormat === "jpg" || normalizedFormat === "jpeg";
+  const filePath = screenSnapshotTempPath({ ext: isJpeg ? "jpg" : "png" });
+  await writeBase64ToFile(filePath, payload.base64);
+  const content: AgentToolResult<unknown>["content"] = [];
+  if (modelHasVision && payload.base64) {
+    content.push({
+      type: "image",
+      data: payload.base64,
+      mimeType: isJpeg ? "image/jpeg" : "image/png",
+    });
+  }
+  return await sanitizeToolResultImages(
+    {
+      content,
+      details: {
+        path: filePath,
+        width: payload.width,
+        height: payload.height,
+        screenIndex: payload.screenIndex,
+        capturedAtMs: payload.capturedAtMs,
+        media: { mediaUrls: [filePath] },
+      },
+    },
+    "nodes:screen_snapshot",
+    imageSanitization,
+  );
 }
 
 const DEFAULT_PHOTOS_LIMIT = 1;
